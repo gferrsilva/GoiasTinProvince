@@ -19,7 +19,7 @@ library(ggpubr) # ggarrange
 ```
 ## Authors:
 * [Guilherme Ferreira da Silva](https://cutt.ly/RdsGmT5), (Mail to: guilherme.ferreira@cprm.gov.br)
-* [Marcos Vinícius Ferreira](http://lattes.cnpq.br/0664633989688055), 
-* [Iago Sousa Lima Costa](http://lattes.cnpq.br/9427131869731616), 
+* [Marcos Vinícius Ferreira](http://lattes.cnpq.br/0664633989688055) 
+* [Iago Sousa Lima Costa](http://lattes.cnpq.br/9427131869731616) 
 * [Lucy Takehara Chemale](http://lattes.cnpq.br/6291856399463658)
 * [Luiz Gustavo Rodrigues Pinto](http://lattes.cnpq.br/3875556796137699)
