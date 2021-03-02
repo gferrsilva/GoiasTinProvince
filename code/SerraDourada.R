@@ -136,7 +136,7 @@ fviz_pca_var(pca,
 )
 
 #####
-# Data Segmentation
+# Airborne Geophysics
 #####
 
 # Model Based Clustering: 1st Round ----
@@ -167,9 +167,9 @@ df <- df %>%
 
 ## Plot MBC
 ### Bayiesian Information Criterion 
-BIC <- plot(mbc, what = 'BIC')
+plot(mbc, what = 'BIC')
 ### Biplot of Classification by feature combinations
-MBC <- plot(mbc,what = 'classification')
+plot(mbc,what = 'classification')
 ### Map of 1st round clustering
 (map1 <- ggplot(df, aes(x = Longitude,
                y = Latitude,
@@ -258,6 +258,110 @@ df6 %>%
   theme(axis.text.x = element_text(angle = 90,
                                    vjust = .5))
 )
+
+#####
+# Lithogeochemistry
+#####
+
+# Import data ----
+
+geoq <- readRDS(file = 'data/geochemistry.RDS')
+
+# Data normalization ----
+geoq_norm <- geoq %>%
+  filter(Longitude > -48.6) %>%
+  filter(Latitude < -13) %>%
+  elem_norm(method = 'clr',keep = c('Latitude','Longitude','ETR','Y')) %>%
+  elem_norm(method = 'minmax',keep = c('Latitude','Longitude','ETR','Y')) 
+
+# Correlation analysis ----
+M <- cor(geoq_norm %>%
+           filter(Longitude > -48.6) %>%
+           filter(Latitude < -13) %>%
+           filter(K2O > .5) %>%
+           select(6:12,27),
+         method = "pearson")
+
+(corrplot <- corrplot(M, method="color",# col=col(200),  
+         type="upper", order= 'original', 
+         addCoef.col = "black", # Add coefficient of correlation
+         tl.col="black", tl.srt=45, #Text label color and rotation
+         diag=FALSE, 
+         tl.cex = 1, # tamanho da fonte dos labels
+         tl.offset = 1, # offset do nome das colunas em relação a matriz
+         number.font = 1.5,
+         number.digits = 1)
+)
+
+(pairs.plot <- ggpairs(geoq_norm %>%
+          filter(Longitude > -48.6) %>%
+          filter(Latitude < -13) %>%
+          filter(K2O > .85) %>%
+          filter(Th > .45) %>%
+          select(6:12,27)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = .5, hjust = .5))
+)
+
+# Map of REE concentration
+
+zoom <- data.frame(xmin = -48.579,
+                   xmax = -48.435,
+                   ymin = -13.575,
+                   ymax = -13.4)
+
+
+(map.full <- geoq %>%
+    filter(Longitude > -48.55) %>%
+    filter(Latitude < -13) %>%
+    ggplot(aes(x = Longitude, y = Latitude, fill = ETR, size = ETR)) +
+    geom_raster(inherit.aes = FALSE,
+                data = df_raw, fill = 'gray',
+                mapping = aes(x = Longitude, y = Latitude)) +
+    geom_raster(inherit.aes = FALSE,
+                data = df6, fill = 'gray30',
+                mapping = aes(x = Longitude, y = Latitude)) +
+    # geom_rect(inherit.aes = FALSE, col = 'black',
+    #           fill = NA, data = zoom,mapping = aes(xmin = xmin,
+    #                                                xmax = xmax,
+    #                                                ymin = ymin,
+    #                                                ymax = ymax)) +
+    geom_jitter(alpha = .6, shape = 21, col = 'black',width = .005,height = .005) +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 90,hjust = .5,vjust = .5)) +
+    coord_equal() +
+    scale_fill_gradient(low = 'green',high = 'red') +
+    scale_size_binned(range = c(.1,6),nice.breaks = TRUE) +
+    labs(fill = expression(paste(Sigma,'REE (ppm)')),
+         size = expression(paste(Sigma,'REE (ppm)')))
+)
+
+(map.detail <- geoq %>%
+    filter(Longitude > -48.6) %>%
+    filter(Latitude < -13) %>%
+    ggplot(aes(x = Longitude, y = Latitude, fill = ETR, size = ETR)) +
+    geom_raster(inherit.aes = FALSE,
+                data = df_raw, fill = 'gray',
+                mapping = aes(x = Longitude, y = Latitude)) +
+    geom_raster(inherit.aes = FALSE,
+                data = df6, fill = 'gray30',
+                mapping = aes(x = Longitude, y = Latitude)) +
+    geom_rect(inherit.aes = FALSE, col = 'black',
+              fill = NA,
+              data = zoom,
+              mapping = aes(xmin = xmin,
+                            xmax = xmax,
+                            ymin = ymin,
+                            ymax = ymax)) +
+    geom_point(alpha = .6, shape = 21, col = 'black') +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 90,hjust = .5,vjust = .5)) +
+    coord_equal(ylim = c(-13.6, -13.4)) +
+    scale_fill_gradient(low = 'green',high = 'red') +
+    scale_size_binned(range = c(.1,6),nice.breaks = TRUE) +
+    labs(fill = expression(paste(Sigma,'REE (ppm)')),
+         size = expression(paste(Sigma,'REE (ppm)')))
+)
+
 #####
 # Exporting Figures
 #####
@@ -269,12 +373,12 @@ dev.off()
 
 # Figure 03: BIC curve for MBC
 Cairo::CairoPDF(file = 'figure/Figure03.pdf',width = 9,height = 5)
-BIC
+plot(mbc, what = 'BIC')
 dev.off()
 
 # Figure 04: MBC adjustment of model VVV on data
 Cairo::CairoPDF(file = 'figure/Figure04.pdf',width = 8,height = 8)
-MBC
+plot(mbc,what = 'classification')
 dev.off()
 
 # Figure 05 - Boxplot for Round 1 segmentation
@@ -306,6 +410,6 @@ df %>%
 dev.off()
 
 # Figure 07 - Map of Clusters Rounds 1 and 2
-Cairo::CairoPDF(file = 'figure/Figure07.pdf',width = 8,height = 6)
-ggarrange(map1, map2,nrow = 1)
+Cairo::CairoPDF(file = 'figure/Figure07.pdf',width = 12,height = 9)
+ggarrange(map1, map2, map.full, nrow = 1)
 dev.off()
